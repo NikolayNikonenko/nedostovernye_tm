@@ -10,28 +10,33 @@ namespace поиск_недостоверной_ТМ_по_корреляции
         static void Main(string[] args)
         {
             Console.BufferHeight = 30000;
-            string mainDir = "C:\\Users\\User\\Desktop\\учеба\\магистратура\\ВКР\\суточные срезы\\105 срезов для БД\\2023_01_11";
+            string mainDir = "D:\\учеба\\магистратура\\диплом\\сут. ср\\2023_01_11";
             var mainDirInfo = new DirectoryInfo(mainDir);
             DirectoryInfo[] subDirs = mainDirInfo.GetDirectories();
 
-            var znachForTm = new Dictionary<TMKey, TwoList>();
-            var slicesList = new List<Slices>();
-            var activePowerImbalanceList = new List<ActivePowerImbalance>();
-            var reactivePowerImbalanceList = new List<ReactivePowerImbalance>();
+            //var znachForTm = new Dictionary<TMKey, TwoList>();
+            //var slicesList = new List<Slices>();
+            //var activePowerImbalanceList = new List<ActivePowerImbalance>();
+            //var reactivePowerImbalanceList = new List<ReactivePowerImbalance>();
 
             int activeImbalanceOrderIndex = 1;
             int reactiveImbalanceOrderIndex = 1;
             foreach (DirectoryInfo subDir in subDirs)
             {
+                var znachForTm = new Dictionary<TMKey, TwoList>();
+                var slicesList = new List<Slices>();
+                var activePowerImbalanceList = new List<ActivePowerImbalance>();
+                var reactivePowerImbalanceList = new List<ReactivePowerImbalance>();
                 ProcessSubDirectory(subDir, znachForTm, slicesList, activePowerImbalanceList, reactivePowerImbalanceList, activeImbalanceOrderIndex, reactiveImbalanceOrderIndex);
                 activeImbalanceOrderIndex += 1;
                 reactiveImbalanceOrderIndex += 1;
                 // Освобождение ресурсов
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
+                //GC.Collect();
+                //GC.WaitForPendingFinalizers();
+                CategorizeAndSaveTelemetryData(znachForTm, slicesList, activePowerImbalanceList, reactivePowerImbalanceList);
             }
 
-            CategorizeAndSaveTelemetryData(znachForTm, slicesList, activePowerImbalanceList, reactivePowerImbalanceList);
+           // CategorizeAndSaveTelemetryData(znachForTm, slicesList, activePowerImbalanceList, reactivePowerImbalanceList);
             Console.WriteLine("Усе");
         }
 
@@ -207,18 +212,14 @@ namespace поиск_недостоверной_ТМ_по_корреляции
 
         static void CategorizeAndSaveTelemetryData(Dictionary<TMKey, TwoList> znachForTm, List<Slices> slicesList, List<ActivePowerImbalance> activePowerImbalanceList, List<ReactivePowerImbalance> reactivePowerImbalanceList)
         {
-            var unreliableTM = new Dictionary<TMKey, double>();
-            var questionableTM = new Dictionary<TMKey, double>();
-            var reliableTM = new Dictionary<TMKey, double>();
 
             using (ApplicationContext db = new ApplicationContext())
             {
-                //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"tm\" RESTART IDENTITY;");
-                //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"tm\";");
-                //db.Database.ExecuteSqlRaw("DELETE FROM \"TMValues\";");
-                db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"slices\" RESTART IDENTITY;");
-                db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"active_power_imbalance\" RESTART IDENTITY;");
-                db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"reactive_power_imbalance\" RESTART IDENTITY;");
+               //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"tm\" RESTART IDENTITY;");
+               //db.Database.ExecuteSqlRaw(" TRUNCATE TABLE\"TMValues\" RESTART IDENTITY;");
+               //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"slices\" RESTART IDENTITY;");
+               //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"active_power_imbalance\" RESTART IDENTITY;");
+               //db.Database.ExecuteSqlRaw("TRUNCATE TABLE \"reactive_power_imbalance\" RESTART IDENTITY;");
 
                 var tmValueEntries = new List<telemetryValues>();
                 var tmEntries = new List<telemetry>();
@@ -227,8 +228,6 @@ namespace поиск_недостоверной_ТМ_по_корреляции
 
                 foreach (var entry in znachForTm)
                 {
-                    double correlation = CalculateCorrelation(entry.Value.MeasuredValues, entry.Value.EstimatedValues);
-                    string status = DetermineStatus(correlation);
 
                     for (int i = 0; i < entry.Value.MeasuredValues.Count; i++)
                     {
@@ -246,111 +245,42 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                             DeltaOcenIzmer = entry.Value.DeltaIzmOc[i],
                             NameTM = entry.Value.Names[i],
                             NumberOfSrez = entry.Value.Srez[i],
-                            Correlation = Math.Round(correlation, 3),
-                            Status = status,
-                            SliceID = entry.Value.SliceIDs[i]  // Устанавливаем ссылку на SliceID
+                            SliceID = entry.Value.SliceIDs[i],  // Устанавливаем ссылку на SliceID
+                            Lagranj = entry.Value.LagrangeValues[i]
+
                         });
                     }
 
-
-                    if (!double.IsNaN(correlation))
-                    {
-                        CategorizeTM(entry.Key, correlation, unreliableTM, questionableTM, reliableTM, db, entry.Value);
-                        double maxPositiveLagrange = entry.Value.LagrangeValues.Where(x => x > 0).DefaultIfEmpty(0).Max();
-                        double maxNegativeLagrange = entry.Value.LagrangeValues.Where(x => x < 0).DefaultIfEmpty(0).Min();
-                        double avgLagrange = entry.Value.LagrangeValues.Average();
-                        double maxAbsoluteLagrange = Math.Abs(maxPositiveLagrange) > Math.Abs(maxNegativeLagrange) ? maxPositiveLagrange : maxNegativeLagrange;
-
-                        tmEntries.Add(new telemetry
-                        {
-                            ID = Guid.NewGuid(),
-                            IndexTm = entry.Key.Index,
-                            CorrTm = Math.Round(correlation, 3),
-                            Status = status,
-                            MaxLagranj = Math.Round(maxAbsoluteLagrange, 2),
-                            AvgLagranj = Math.Round(avgLagrange, 2),
-                            NameTM = entry.Value.Names[0]
-                        });
-                    }
+                    //tmEntries.Add(new telemetry
+                    //{
+                        //ID = Guid.NewGuid(),
+                        //IndexTm = entry.Key.Index,
+                        ////CorrTm = Math.Round(correlation, 3),
+                        //Status = "Не определено",
+                        //MaxLagranj = Math.Round(maxAbsoluteLagrange, 2),
+                        //AvgLagranj = Math.Round(avgLagrange, 2),
+                        //NameTM = entry.Value.Names[0]
+                    //});
                 }
-
-                //db.TMValues.AddRange(tmValueEntries);
-               // db.tm.AddRange(tmEntries);
+            
+                db.TMValues.AddRange(tmValueEntries);
+                db.tm.AddRange(tmEntries);
                 db.slices.AddRange(slicesList);
                 db.active_power_imbalance.AddRange(activePowerImbalanceList);
                 db.reactive_power_imbalance.AddRange(reactivePowerImbalanceList);
                 db.SaveChanges();
             }
-
-            Console.WriteLine($"Не надежные ТМ: {unreliableTM.Count}");
-            Console.WriteLine($"Спорные ТМ: {questionableTM.Count}");
-            Console.WriteLine($"Надежные ТМ: {reliableTM.Count}");
         }
 
+        //static void DisplayTelemetryData(string header, Dictionary<TMKey, double> data)
+        //{
+        //    Console.WriteLine(header);
+        //    foreach (var item in data)
+        //    {
+        //        Console.WriteLine($"indexTM: {item.Key.Index}, id1: {item.Key.Id1}, id2: {item.Key.Id2}, id3: {item.Key.Id3}, Correlation: {Math.Round(item.Value, 3)}");
+        //    }
+        //}
 
-        static void CategorizeTM(TMKey key, double correlation, Dictionary<TMKey, double> unreliableTM, Dictionary<TMKey, double> questionableTM, Dictionary<TMKey, double> reliableTM, ApplicationContext db, TwoList values)
-        {
-            double maxPositiveLagrange = values.LagrangeValues.Where(x => x > 0).DefaultIfEmpty(0).Max();
-            double maxNegativeLagrange = values.LagrangeValues.Where(x => x < 0).DefaultIfEmpty(0).Min();
-            double avgLagrange = values.LagrangeValues.Average();
-            double maxAbsoluteLagrange = Math.Abs(maxPositiveLagrange) > Math.Abs(maxNegativeLagrange) ? maxPositiveLagrange : maxNegativeLagrange;
-
-            if (correlation >= -1 && correlation < -0.5)
-            {
-                unreliableTM.Add(key, correlation);
-            }
-            else if (correlation >= -0.5 && correlation < 0.5)
-            {
-                questionableTM.Add(key, correlation);
-            }
-           //else
-           //{
-           //    reliableTM.Add(key, correlation);
-           //}
-        }
-
-        static void DisplayTelemetryData(string header, Dictionary<TMKey, double> data)
-        {
-            Console.WriteLine(header);
-            foreach (var item in data)
-            {
-                Console.WriteLine($"indexTM: {item.Key.Index}, id1: {item.Key.Id1}, id2: {item.Key.Id2}, id3: {item.Key.Id3}, Correlation: {Math.Round(item.Value, 3)}");
-            }
-        }
-        static double CalculateCorrelation(List<double> measuredValues, List<double> estimatedValues)
-        {
-            int count = measuredValues.Count;
-            if (count == 0) return double.NaN;
-
-            double avgMeasured = measuredValues.Average();
-            double avgEstimated = estimatedValues.Average();
-
-            double covariance = 0;
-            double varianceMeasured = 0;
-            double varianceEstimated = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                double measuredDiff = measuredValues[i] - avgMeasured;
-                double estimatedDiff = estimatedValues[i] - avgEstimated;
-
-                covariance += measuredDiff * estimatedDiff;
-                varianceMeasured += measuredDiff * measuredDiff;
-                varianceEstimated += estimatedDiff * estimatedDiff;
-            }
-
-            double denominator = Math.Sqrt(varianceMeasured * varianceEstimated);
-            if (denominator == 0) return double.NaN;
-
-            return covariance / denominator;
-        }
-        static string DetermineStatus(double correlation)
-        {
-            if (correlation >= -1 && correlation < -0.5) return "Недостоверная";
-            if (correlation >= -0.5 && correlation < 0.5) return "Сомнительная";
-            if (correlation >= 0.5 && correlation <= 1) return "Достоверная";
-            return "Неопределено";
-        }
     }
 
     public class TMKey

@@ -21,10 +21,10 @@ namespace поиск_недостоверной_ТМ_по_корреляции
         public double DeltaOcenIzmer { get; set; }
         public string NameTM { get; set; }
         public string NumberOfSrez { get; set; } // Новое поле для значения среза
-        public double Correlation { get; set; } // Коэффициент корреляции
-        public string Status { get; set; } // Статус
-        //public string SliceFilePath { get; set; }
-         public Guid SliceID { get; set; }
+        public Guid SliceID { get; set; }
+        public double Lagranj { get; set; }
+
+
 
     }
 }
