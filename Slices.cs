@@ -13,6 +13,7 @@ namespace поиск_недостоверной_ТМ_по_корреляции
         public Guid SliceID { get; set; }
         public string SliceName { get; set; }
         public string SlicePath { get; set; }
+        public string experiment_label { get; set; }
 
     }
 }

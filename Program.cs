@@ -31,8 +31,8 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                 activeImbalanceOrderIndex += 1;
                 reactiveImbalanceOrderIndex += 1;
                 // Освобождение ресурсов
-                //GC.Collect();
-                //GC.WaitForPendingFinalizers();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
                 CategorizeAndSaveTelemetryData(znachForTm, slicesList, activePowerImbalanceList, reactivePowerImbalanceList);
             }
 
@@ -94,7 +94,8 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                     name_p = namePNeb,
                     p_neb_p = dPNeb,
                     SliceID_p = GetOrCreateSliceID(filePath, match1.Value, slicesList),
-                    orderIndexP = activeImbalanceOrderIndex
+                    orderIndexP = activeImbalanceOrderIndex,
+                    experiment_label = "Входные данные"
                 });
             }
 
@@ -122,7 +123,8 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                     name_q = nameQNeb,
                     q_neb_q = dQNeb,
                     SliceID_q = GetOrCreateSliceID(filePath, match1.Value, slicesList),
-                    orderIndexQ = reactiveImbalanceOrderIndex
+                    orderIndexQ = reactiveImbalanceOrderIndex,
+                    experiment_label = "Входные данные"
                 });
             }
 
@@ -165,7 +167,8 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                 {
                     SliceID = sliceID,
                     SliceName = match1,
-                    SlicePath = filePath
+                    SlicePath = filePath,
+                    experiment_label = "Входные данные"
                 });
             }
             else
@@ -204,7 +207,9 @@ namespace поиск_недостоверной_ТМ_по_корреляции
             {
                 SliceID = Guid.NewGuid(),
                 SliceName = sliceName,
-                SlicePath = slicePath
+                SlicePath = slicePath,
+                experiment_label = "Входные данные"
+
             };
             slicesList.Add(newSlice);
             return newSlice.SliceID;
@@ -240,13 +245,12 @@ namespace поиск_недостоверной_ТМ_по_корреляции
                             OrderIndex = orderIndex++,
                             Privyazka = entry.Value.PrivyazkaTM[i],
                             Id1 = entry.Key.Id1,
-                            Id2 = entry.Key.Id2,
-                            Id3 = entry.Key.Id3,
                             DeltaOcenIzmer = entry.Value.DeltaIzmOc[i],
                             NameTM = entry.Value.Names[i],
                             NumberOfSrez = entry.Value.Srez[i],
                             SliceID = entry.Value.SliceIDs[i],  // Устанавливаем ссылку на SliceID
-                            Lagranj = entry.Value.LagrangeValues[i]
+                            Lagranj = entry.Value.LagrangeValues[i],
+                            experiment_label = "Входные данные"
 
                         });
                     }

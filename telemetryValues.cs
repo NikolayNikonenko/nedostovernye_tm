@@ -16,13 +16,12 @@ namespace поиск_недостоверной_ТМ_по_корреляции
         public int OrderIndex { get; set; }     
         public string Privyazka { get; set; }
         public int Id1 { get; set; }
-        public int Id2 { get; set; }
-        public int Id3 { get; set; }
         public double DeltaOcenIzmer { get; set; }
         public string NameTM { get; set; }
         public string NumberOfSrez { get; set; } // Новое поле для значения среза
         public Guid SliceID { get; set; }
         public double Lagranj { get; set; }
+        public string experiment_label { get; set; }
 
 
 
