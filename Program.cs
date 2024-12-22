@@ -40,6 +40,11 @@ namespace поиск_недостоверной_ТМ_по_корреляции
             Console.WriteLine("Усе");
         }
 
+        private static bool ShouldSave(double value)
+        {
+            return Math.Abs(value) > 0;
+        }
+
         static void ProcessSubDirectory(DirectoryInfo subDir, Dictionary<TMKey, TwoList> znachForTm, List<Slices> slicesList, List<ActivePowerImbalance> activePowerImbalanceList, List<ReactivePowerImbalance> reactivePowerImbalanceList, int activeImbalanceOrderIndex, int reactiveImbalanceOrderIndex)
         {
             Regex regex = new Regex(@"\b(\d\d_\d\d_\d\d)");
@@ -81,22 +86,25 @@ namespace поиск_недостоверной_ТМ_по_корреляции
             int countNebP = _active_power_imbalance.Size;
             for (int n_neb_p = 0; n_neb_p<countNebP; n_neb_p++)
             {
-                int nNachPNeb = (int)n_nach_P.get_ZN(n_neb_p);
-                int nKonPNeb = (int)n_kon_P.get_ZN(n_neb_p);
-                string namePNeb = (string)name_P.get_ZN(n_neb_p);
                 double dPNeb = (double)dP.get_ZN(n_neb_p);
-
-                activePowerImbalanceList.Add(new ActivePowerImbalance
+                if (ShouldSave(dPNeb))
                 {
-                    ID = Guid.NewGuid(),
-                    n_nach_p = nNachPNeb,
-                    n_kon_p = nKonPNeb,
-                    name_p = namePNeb,
-                    p_neb_p = dPNeb,
-                    SliceID_p = GetOrCreateSliceID(filePath, match1.Value, slicesList),
-                    orderIndexP = activeImbalanceOrderIndex,
-                    experiment_label = "Входные данные"
-                });
+                    int nNachPNeb = (int)n_nach_P.get_ZN(n_neb_p);
+                    int nKonPNeb = (int)n_kon_P.get_ZN(n_neb_p);
+                    string namePNeb = (string)name_P.get_ZN(n_neb_p);
+
+                    activePowerImbalanceList.Add(new ActivePowerImbalance
+                    {
+                        ID = Guid.NewGuid(),
+                        n_nach_p = nNachPNeb,
+                        n_kon_p = nKonPNeb,
+                        name_p = namePNeb,
+                        p_neb_p = dPNeb,
+                        SliceID_p = GetOrCreateSliceID(filePath, match1.Value, slicesList),
+                        orderIndexP = activeImbalanceOrderIndex,
+                        experiment_label = "Входные данные"
+                    });
+                }
             }
 
             // Обращение к таблице ТИ: Балансы Q
@@ -110,22 +118,26 @@ namespace поиск_недостоверной_ТМ_по_корреляции
 
             for (int n_neb_q = 0; n_neb_q < countNebQ; n_neb_q++)
             {
-                int nNachQNeb = (int)n_nach_Q.get_ZN(n_neb_q);
-                int nKonQNeb = (int)n_kon_Q.get_ZN(n_neb_q);
-                string nameQNeb = (string)name_Q.get_ZN(n_neb_q);
                 double dQNeb = (double)dq.get_ZN(n_neb_q);
-
-                reactivePowerImbalanceList.Add(new ReactivePowerImbalance
+                if (ShouldSave(dQNeb))
                 {
-                    ID = Guid.NewGuid(),
-                    n_nach_q = nNachQNeb,
-                    n_kon_q = nKonQNeb,
-                    name_q = nameQNeb,
-                    q_neb_q = dQNeb,
-                    SliceID_q = GetOrCreateSliceID(filePath, match1.Value, slicesList),
-                    orderIndexQ = reactiveImbalanceOrderIndex,
-                    experiment_label = "Входные данные"
-                });
+                    int nNachQNeb = (int)n_nach_Q.get_ZN(n_neb_q);
+                    int nKonQNeb = (int)n_kon_Q.get_ZN(n_neb_q);
+                    string nameQNeb = (string)name_Q.get_ZN(n_neb_q);
+
+
+                    reactivePowerImbalanceList.Add(new ReactivePowerImbalance
+                    {
+                        ID = Guid.NewGuid(),
+                        n_nach_q = nNachQNeb,
+                        n_kon_q = nKonQNeb,
+                        name_q = nameQNeb,
+                        q_neb_q = dQNeb,
+                        SliceID_q = GetOrCreateSliceID(filePath, match1.Value, slicesList),
+                        orderIndexQ = reactiveImbalanceOrderIndex,
+                        experiment_label = "Входные данные"
+                    });
+                }
             }
 
             int countTM = _tableTIСhannel.Size;
