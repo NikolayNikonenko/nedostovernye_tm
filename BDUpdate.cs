@@ -1,23 +1,35 @@
 ﻿using ASTRALib;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Office.Interop.Excel;
+using Npgsql;
 using System.Text.RegularExpressions;
 
 namespace поиск_недостоверной_ТМ_по_корреляции
 {
-    internal class Program
+    internal class BDUpdate
     {
+
+        private Dictionary<string, string> Parameters = new();
+
         static void Main(string[] args)
         {
             Console.BufferHeight = 30000;
-            string mainDir = "D:\\учеба\\магистратура\\диплом\\сут. ср\\2023_01_11";
+            //string mainDir = "D:\\учеба\\магистратура\\диплом\\сут. ср\\2023_01_11";
+
+            string mainDir = GetParameterValue("InputDataPath");
+            Console.WriteLine($"Основной каталог: {mainDir}");
             var mainDirInfo = new DirectoryInfo(mainDir);
             DirectoryInfo[] subDirs = mainDirInfo.GetDirectories();
 
-            //var znachForTm = new Dictionary<TMKey, TwoList>();
-            //var slicesList = new List<Slices>();
-            //var activePowerImbalanceList = new List<ActivePowerImbalance>();
-            //var reactivePowerImbalanceList = new List<ReactivePowerImbalance>();
+            using (ApplicationContext db = new ApplicationContext())
+            {
+                //db.Database.ExecuteSqlRaw("DELETE FROM \"correlation_coefficients\";");
+                //db.Database.ExecuteSqlRaw("DELETE FROM \"telemetry_values\";");
+                //db.Database.ExecuteSqlRaw("DELETE FROM \"active_power_imbalance\";");
+                //db.Database.ExecuteSqlRaw("DELETE FROM \"reactive_power_imbalance\";");
+                //db.Database.ExecuteSqlRaw("DELETE FROM \"slices\";");
+            }
+
 
             int activeImbalanceOrderIndex = 1;
             int reactiveImbalanceOrderIndex = 1;
@@ -40,6 +52,21 @@ namespace поиск_недостоверной_ТМ_по_корреляции
             Console.WriteLine("Усе");
         }
 
+        private static string GetParameterValue(string parameterName)
+        {
+            const string connectionString = "Host=localhost;Port = 5432;Database=БД_ИТ_диплом;Username=postgres;Password=HgdMoxN2";
+
+            using var connection = new NpgsqlConnection(connectionString);
+            connection.Open();
+
+            string query = "SELECT parameter_value FROM configuration_parameters WHERE parameter_name = @parameterName";
+            using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("parameterName", parameterName);
+
+            var result = command.ExecuteScalar();
+            return result?.ToString() ?? throw new Exception($"Parameter {parameterName} not found in the database.");
+        }
+
         private static bool ShouldSave(double value)
         {
             return Math.Abs(value) > 0;
@@ -60,6 +87,15 @@ namespace поиск_недостоверной_ТМ_по_корреляции
             Rastr _rastr = new Rastr();
             string filePath = pathFile[0].FullName;
             _rastr.Load(RG_KOD.RG_REPL, filePath, "");
+
+
+            // Фильтр
+            COMCKLib.ITI m_TI = new COMCKLib.TI();
+            object SARes = null;
+            int Res = 0;
+            Res = m_TI.FiltrTI_1(_rastr, ref SARes);
+
+            _rastr.opf("s");
 
             // Обращение к таблице ТИ: Каналы
             ITable _tableTIСhannel = (ITable)_rastr.Tables.Item("ti");
@@ -266,36 +302,18 @@ namespace поиск_недостоверной_ТМ_по_корреляции
 
                         });
                     }
-
-                    //tmEntries.Add(new telemetry
-                    //{
-                        //ID = Guid.NewGuid(),
-                        //IndexTm = entry.Key.Index,
-                        ////CorrTm = Math.Round(correlation, 3),
-                        //Status = "Не определено",
-                        //MaxLagranj = Math.Round(maxAbsoluteLagrange, 2),
-                        //AvgLagranj = Math.Round(avgLagrange, 2),
-                        //NameTM = entry.Value.Names[0]
-                    //});
                 }
-            
-                db.TMValues.AddRange(tmValueEntries);
-                db.tm.AddRange(tmEntries);
                 db.slices.AddRange(slicesList);
+                db.SaveChanges();
+
                 db.active_power_imbalance.AddRange(activePowerImbalanceList);
                 db.reactive_power_imbalance.AddRange(reactivePowerImbalanceList);
+                db.telemetry_values.AddRange(tmValueEntries);
+                db.correlation_coefficients.AddRange(tmEntries);
+
                 db.SaveChanges();
             }
         }
-
-        //static void DisplayTelemetryData(string header, Dictionary<TMKey, double> data)
-        //{
-        //    Console.WriteLine(header);
-        //    foreach (var item in data)
-        //    {
-        //        Console.WriteLine($"indexTM: {item.Key.Index}, id1: {item.Key.Id1}, id2: {item.Key.Id2}, id3: {item.Key.Id3}, Correlation: {Math.Round(item.Value, 3)}");
-        //    }
-        //}
 
     }
 

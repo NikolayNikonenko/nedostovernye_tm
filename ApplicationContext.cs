@@ -9,12 +9,13 @@ namespace поиск_недостоверной_ТМ_по_корреляции
 {
     internal class ApplicationContext: DbContext
     {
-        public DbSet<telemetry> tm { get; set; } = null;
+        public DbSet<telemetry> correlation_coefficients { get; set; } = null;
 
-        public DbSet<telemetryValues> TMValues { get; set; }
+        public DbSet<telemetryValues> telemetry_values { get; set; }
         public DbSet<Slices> slices { get; set; }
         public DbSet<ActivePowerImbalance> active_power_imbalance { get; set; }
         public DbSet<ReactivePowerImbalance> reactive_power_imbalance { get; set; }
+
 
         public ApplicationContext()
         {
